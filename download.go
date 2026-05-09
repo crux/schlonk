@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"os"
 )
 
 const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
 	"(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-// httpClient is the shared client. It follows redirects by default and keeps
-// cookies for a single run (some CDNs hand out session cookies on the HTML
-// fetch that the signed video URL then requires).
-var httpClient = &http.Client{}
+// httpClient is the shared client. It follows redirects by default and carries
+// a cookie jar so platforms that hand out session cookies on the HTML fetch
+// (TikTok in particular) can reuse them when fetching the signed video URL.
+var httpClient = func() *http.Client {
+	jar, _ := cookiejar.New(nil)
+	return &http.Client{Jar: jar}
+}()
 
 // download writes the video to userPath if non-empty, otherwise to a path
 // derived from src.SuggestedBasename plus an extension chosen by the format.
